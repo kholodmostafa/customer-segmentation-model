@@ -1,0 +1,68 @@
+
+WITH rfm_ AS (
+      SELECT customerid,
+             MAX(invoicedate) AS Recency,
+             COUNT(*) AS Frequency,
+             AVG(quantity) AS Monetry
+      FROM online_retail
+      GROUP BY customerid
+     ),
+     calc_rfm AS (
+      SELECT r.*,
+             NTILE(4) OVER (ORDER BY Recency ASC) as R_Score,
+             NTILE(4) OVER (ORDER BY Frequency DESC) as F_Score,
+             NTILE(4) OVER (ORDER BY Monetry DESC) as M_Score
+      FROM rfm_ r
+     )
+SELECT rfm.*,
+       (CASE WHEN R_Score = 5 AND (F_Score+M_Score)/2 = 5 
+             THEN 'Champions'
+		     WHEN R_Score = 5 AND (F_Score+M_Score)/2 = 4 
+			 THEN 'Champions'
+		     WHEN R_Score = 4 AND (F_Score+M_Score)/2 = 5 
+			 THEN 'Champions'
+		     WHEN R_Score = 5 AND (F_Score+M_Score)/2 = 2 
+			 THEN 'Potential Loyalists'
+			WHEN R_Score = 4 AND (F_Score+M_Score)/2 = 2 
+			 THEN 'Potential Loyalists'
+			WHEN R_Score = 3 AND (F_Score+M_Score)/2 = 3 
+			 THEN 'Potential Loyalists'
+			WHEN R_Score = 4 AND (F_Score+M_Score)/2 = 3 
+			 THEN 'Potential Loyalists'
+             WHEN R_Score = 5 AND (F_Score+M_Score)/2 = 3
+             THEN 'Loyal Customers'
+			WHEN R_Score = 4 AND (F_Score+M_Score)/2 = 4
+             THEN 'Loyal Customers'
+			WHEN R_Score = 3 AND (F_Score+M_Score)/2 = 5
+             THEN 'Loyal Customers'
+			WHEN R_Score = 3 AND (F_Score+M_Score)/2 = 4
+             THEN 'Loyal Customers'
+			WHEN R_Score = 5 AND (F_Score+M_Score)/2 = 1
+             THEN 'recent Customers'
+			WHEN R_Score = 4 AND (F_Score+M_Score)/2 = 1
+             THEN 'promising Customers'
+			WHEN R_Score = 4 AND (F_Score+M_Score)/2 = 3
+             THEN 'promising Customers'
+			WHEN R_Score = 3 AND (F_Score+M_Score)/2 = 2
+             THEN 'Customers need attention'
+			WHEN R_Score = 2 AND (F_Score+M_Score)/2 = 3
+             THEN 'Customers need attention'
+			WHEN R_Score = 2 AND (F_Score+M_Score)/2 = 2
+             THEN 'Customers need attention'
+		    WHEN R_Score = 2 AND (F_Score+M_Score)/2 = 5
+             THEN 'at risk'
+		    WHEN R_Score = 2 AND (F_Score+M_Score)/2 = 4
+             THEN 'at risk'
+		    WHEN R_Score = 1 AND (F_Score+M_Score)/2 = 3
+             THEN 'at risk'
+		WHEN R_Score = 1 AND (F_Score+M_Score)/2 = 5
+             THEN 'cant lose them'
+		WHEN R_Score = 1 AND (F_Score+M_Score)/2 = 4
+             THEN 'cant lose them'
+		WHEN R_Score = 1 AND (F_Score+M_Score)/2 = 2
+             THEN 'hybernating'
+		WHEN R_Score = 1 AND (F_Score+M_Score)/2 = 1
+             THEN 'lost'
+		
+        END) as customer_segment
+FROM calc_rfm rfm;
